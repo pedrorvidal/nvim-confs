@@ -1,17 +1,24 @@
 return {
-  "Exafunction/codeium.nvim",
-  cmd = "Codeium",
-  event = "InsertEnter",
-  build = ":Codeium Auth",
-  opts = {
-    enable_cmp_source = vim.g.ai_cmp,
-    virtual_text = {
-      enabled = not vim.g.ai_cmp,
-      key_bindings = {
-        accept = false, -- handled by nvim-cmp / blink.cmp
-        next = "<M-]>",
-        prev = "<M-[>",
-      },
-    },
+  {
+    "Exafunction/codeium.vim",
+    event = "BufEnter",
+    config = function()
+      -- disable default bindings
+      vim.g.codeium_disable_bindings = 1
+
+      -- custom keybindings
+      vim.keymap.set("i", "<C-g>", function()
+        return vim.fn["codeium#Accept"]()
+      end, { expr = true })
+      vim.keymap.set("i", "<C-;>", function()
+        return vim.fn["codeium#CycleCompletions"](1)
+      end, { expr = true })
+      vim.keymap.set("i", "<C-,>", function()
+        return vim.fn["codeium#CycleCompletions"](-1)
+      end, { expr = true })
+      vim.keymap.set("i", "<C-x>", function()
+        return vim.fn["codeium#Clear"]()
+      end, { expr = true })
+    end,
   },
 }
