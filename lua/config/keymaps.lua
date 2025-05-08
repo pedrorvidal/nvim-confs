@@ -213,3 +213,99 @@ end
 
 -- My mappings
 map("i", "jj", "<Esc>", { desc = "JJ To esc" })
+
+
+-- Live grep in selected folder with Neo-tree (using built-in search instead of Telescope)
+
+-- vim.keymap.set("n", "<leader>fs", function()
+--   local path
+--
+--   -- Check if we're in a Neo-tree buffer
+--   if vim.bo.filetype == "neo-tree" then
+--     -- Check if neo-tree API is available
+--     local state_ok, state_manager = pcall(require, "neo-tree.sources.manager")
+--     if not state_ok then
+--       vim.notify("Could not access Neo-tree API", vim.log.levels.WARN)
+--       path = vim.loop.cwd()
+--     else
+--       -- Get the current node from Neo-tree state
+--       local state = state_manager.get_state("filesystem")
+--       local node = state.tree:get_node()
+--       if node then
+--         -- Use the selected node's path (works for both files and directories)
+--         path = node.path
+--         -- If the selected node is a file, use its parent directory for grep
+--         if node.type ~= "directory" then
+--           path = vim.fn.fnamemodify(path, ":h")
+--         end
+--       end
+--     end
+--   end
+--
+-- -- Fall back to current working directory if we couldn't get a path
+--   path = path or vim.loop.cwd()
+-- -- Prompt for search term
+--   vim.ui.input({ prompt = "Search for: " }, function(input)
+--     if input and input ~= "" then
+--       -- Set the working directory to the search path temporarily
+--       local prev_cwd = vim.fn.getcwd()
+--       vim.cmd("cd " .. vim.fn.fnameescape(path))
+--       -- Use Vim's built-in grep with ripgrep if available
+--       if vim.fn.executable("rg") == 1 then
+--         vim.cmd("silent grep! " .. vim.fn.shellescape(input))
+--       else
+--         vim.cmd("silent grep! -r " .. vim.fn.shellescape(input) .. " .")
+--       end
+--       -- Open the quickfix window with results
+--       vim.cmd("copen")
+--       -- Restore the previous working directory
+--       vim.cmd("cd " .. vim.fn.fnameescape(prev_cwd))
+--     end
+--   end)
+-- end, { desc = "Grep in selected folder in Neo-tree" })
+
+-- Live grep in selected folder with Neo-tree (ensuring Telescope is loaded)
+vim.keymap.set("n", "<leader>fs", function()
+  -- Force load Telescope if it's lazy-loaded
+  local status_ok, _ = pcall(require, "telescope")
+  if not status_ok then
+    vim.notify("Telescope is not installed. Please install telescope.nvim", vim.log.levels.ERROR)
+    return
+  end
+  
+  -- Now load the builtin module after ensuring Telescope is loaded
+  local builtin = require("telescope.builtin")
+  
+  local path
+
+  -- Check if we're in a Neo-tree buffer
+  if vim.bo.filetype == "neo-tree" then
+    -- Check if neo-tree API is available
+    local state_ok, state_manager = pcall(require, "neo-tree.sources.manager")
+    if not state_ok then
+      vim.notify("Could not access Neo-tree API", vim.log.levels.WARN)
+      path = vim.loop.cwd()
+    else
+      -- Get the current node from Neo-tree state
+      local state = state_manager.get_state("filesystem")
+      local node = state.tree:get_node()
+      
+      if node then
+        -- Use the selected node's path (works for both files and directories)
+        path = node.path
+        
+        -- If the selected node is a file, use its parent directory for grep
+        if node.type ~= "directory" then
+          path = vim.fn.fnamemodify(path, ":h")
+        end
+      end
+    end
+  end
+  
+  -- Fall back to current working directory if we couldn't get a path
+  path = path or vim.loop.cwd()
+  
+  -- Use Telescope to live grep in the selected path
+  vim.notify("Searching in: " .. path, vim.log.levels.INFO)
+  builtin.live_grep({ search_dirs = { path } })
+end, { desc = "Live Grep in selected folder in Neo-tree" })
