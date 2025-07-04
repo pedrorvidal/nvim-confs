@@ -133,28 +133,60 @@ vim.api.nvim_create_autocmd({ "BufWritePre" }, {
     vim.fn.mkdir(vim.fn.fnamemodify(file, ":p:h"), "p")
   end,
 })
+-- autochange dir when navigating thru folders and
+-- fix initial dir when opens nvim
+
+local augroup = vim.api.nvim_create_augroup("SetCwdOnBufEnter", { clear = true })
+
+-- On VimEnter, set cwd if opening Neovim with a directory
+vim.api.nvim_create_autocmd("VimEnter", {
+  group = augroup,
+  desc = "Set cwd to the opened directory when starting Neovim with `nvim .`",
+  callback = function()
+    local arg = vim.fn.argv(0)
+    if arg ~= "" and vim.fn.isdirectory(arg) == 1 then
+      vim.cmd("cd " .. vim.fn.fnameescape(arg))
+    end
+  end,
+})
+
+-- On BufEnter, set cwd to the file's parent dir
+vim.api.nvim_create_autocmd("BufEnter", {
+  group = augroup,
+  desc = "Change directory to current file's parent",
+  callback = function(event)
+    local bufname = vim.api.nvim_buf_get_name(event.buf)
+    if bufname == "" or bufname:match("^neo%-tree") or vim.bo[event.buf].buftype ~= "" then
+      return
+    end
+    local parent_dir = vim.fn.fnamemodify(bufname, ":h")
+    if vim.fn.isdirectory(parent_dir) == 1 then
+      vim.api.nvim_set_current_dir(parent_dir)
+    end
+  end,
+})
 
 -- This configuration ensures CWD changes when switching tabs/buffers
 -- Add this to your lua/config/autocmds.lua file
 
-local augroup = vim.api.nvim_create_augroup("AutoChdir", { clear = true })
-
--- Option 1: Change directory to the file's parent directory when opening a buffer
-vim.api.nvim_create_autocmd({ "BufEnter" }, {
-  group = augroup,
-  desc = "Change directory to current file's parent",
-  callback = function(event)
-    -- Only process normal buffers with valid names
-    local bufname = vim.api.nvim_buf_get_name(event.buf)
-    if bufname == "" or bufname:match("^neo-tree") or vim.bo[event.buf].buftype ~= "" then
-      return
-    end
-
-    -- Change the directory to the parent directory of the current file
-    local parent_dir = vim.fn.fnamemodify(bufname, ":h")
-    vim.api.nvim_set_current_dir(parent_dir)
-  end,
-})
+-- local augroup = vim.api.nvim_create_augroup("AutoChdir", { clear = true })
+--
+-- -- Option 1: Change directory to the file's parent directory when opening a buffer
+-- vim.api.nvim_create_autocmd({ "BufEnter" }, {
+--   group = augroup,
+--   desc = "Change directory to current file's parent",
+--   callback = function(event)
+--     -- Only process normal buffers with valid names
+--     local bufname = vim.api.nvim_buf_get_name(event.buf)
+--     if bufname == "" or bufname:match("^neo-tree") or vim.bo[event.buf].buftype ~= "" then
+--       return
+--     end
+--
+--     -- Change the directory to the parent directory of the current file
+--     local parent_dir = vim.fn.fnamemodify(bufname, ":h")
+--     vim.api.nvim_set_current_dir(parent_dir)
+--   end,
+-- })
 
 -- Option 2: Change directory to the parent directory when switching tabs
 -- Uncomment this if you want tab-specific directories
