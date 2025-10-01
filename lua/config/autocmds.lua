@@ -166,44 +166,17 @@ vim.api.nvim_create_autocmd("BufEnter", {
   end,
 })
 
--- This configuration ensures CWD changes when switching tabs/buffers
--- Add this to your lua/config/autocmds.lua file
-
--- local augroup = vim.api.nvim_create_augroup("AutoChdir", { clear = true })
---
--- -- Option 1: Change directory to the file's parent directory when opening a buffer
--- vim.api.nvim_create_autocmd({ "BufEnter" }, {
---   group = augroup,
---   desc = "Change directory to current file's parent",
---   callback = function(event)
---     -- Only process normal buffers with valid names
---     local bufname = vim.api.nvim_buf_get_name(event.buf)
---     if bufname == "" or bufname:match("^neo-tree") or vim.bo[event.buf].buftype ~= "" then
---       return
---     end
---
---     -- Change the directory to the parent directory of the current file
---     local parent_dir = vim.fn.fnamemodify(bufname, ":h")
---     vim.api.nvim_set_current_dir(parent_dir)
---   end,
--- })
-
--- Option 2: Change directory to the parent directory when switching tabs
--- Uncomment this if you want tab-specific directories
--- vim.api.nvim_create_autocmd({ "TabEnter" }, {
---   group = augroup,
---   desc = "Change directory to tab's file parent",
---   callback = function()
---     local bufnr = vim.api.nvim_get_current_buf()
---     local bufname = vim.api.nvim_buf_get_name(bufnr)
---     if bufname == "" or bufname:match("^neo-tree") or vim.bo[bufnr].buftype ~= "" then
---       return
---     end
---
---     local parent_dir = vim.fn.fnamemodify(bufname, ":h")
---     vim.api.nvim_set_current_dir(parent_dir)
---   end,
--- })
+-- Auto-use .venv for Python tools inside Neovim
+vim.api.nvim_create_autocmd("BufEnter", {
+  pattern = "*.py",
+  callback = function()
+    local venv = vim.fn.finddir(".venv", ".;")
+    if venv ~= "" then
+      local python = vim.fn.fnamemodify(venv, ":p") .. "/bin/python"
+      vim.g.python3_host_prog = python -- for :checkhealth provider
+    end
+  end,
+})
 
 -- You can modify LazyVim's statusline to show current directory (optional)
 -- Add this to your lua/plugins/lualine.lua file or create it if it doesn't exist
